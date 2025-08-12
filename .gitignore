@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Airflow logs and metadata
+logs/
+dag_processor_manager/
+scheduler/
+
+# Spark artifacts and temporary files
+etl_scripts/artifacts/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python environment folders (if created in future)
+venv/
+env/
+ENV/
+
+# Ignore Delta Lake transaction logs if you want (optional)
+# data/silver/**/_delta_log/
+# data/bronze/**/_delta_log/
+# data/gold/**/_delta_log/
+
+# Ignore Tableau backup or temp files (optional)
+Tableau_Files/*.bak
+Tableau_Files/~$*
+
+# Ignore any dotenv or environment variable files
+.env
+*.env
+
+# Ignore IDE/editor specific files
+.vscode/

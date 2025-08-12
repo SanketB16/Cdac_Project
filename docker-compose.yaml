@@ -1,0 +1,86 @@
+version: '3.8'
+
+x-airflow-image: &airflow-image custom-airflow:latest
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: airflow_etl
+      MYSQL_USER: etl_user
+      MYSQL_PASSWORD: etlpass123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data-volume:/var/lib/mysql
+    restart: unless-stopped
+
+  airflow-webserver:
+    build: .
+    image: *airflow-image
+    container_name: airflow-webserver
+    depends_on:
+      - postgres
+      - mysql
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: 'REPLACE_WITH_REAL_KEY'
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./etl_scripts:/opt/airflow/etl_scripts
+      - ./plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - ./data/bronze:/opt/airflow/data/bronze
+      - ./data/silver:/opt/airflow/data/silver
+      - ./requirements.txt:/requirements.txt
+      - ./jars:/opt/jars  
+    ports:
+      - "8080:8080"
+    command: >
+      bash -c "
+      airflow db upgrade &&
+      airflow users create --username admin --firstname Sanket --lastname Borse --role Admin --email sanket@example.com --password admin &&
+      airflow webserver
+      "
+    restart: unless-stopped
+
+  airflow-scheduler:
+    image: *airflow-image
+    container_name: airflow-scheduler
+    depends_on:
+      - airflow-webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./etl_scripts:/opt/airflow/etl_scripts
+      - ./plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - ./data/bronze:/opt/airflow/data/bronze
+      - ./data/silver:/opt/airflow/data/silver
+      - ./requirements.txt:/requirements.txt
+      - ./jars:/opt/jars  
+    command: ["airflow", "scheduler"]
+    restart: unless-stopped
+
+volumes:
+  postgres-db-volume:
+  mysql-data-volume:
